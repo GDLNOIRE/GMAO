@@ -2,19 +2,52 @@ import dash
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
-from dash.dependencies import Input, Output, State
-
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP],suppress_callback_exceptions=True)
+from dash.dependencies import Input, Output
+import plotly.graph_objects as go
 name = "CestQuoiCeBruit ?"
+isAdvenced = False
+explain = "CestQuoiCeBruit ? est un outil d'aide au diagnostic de pannes automobiles. Il permet de déterminer la panne d'un véhicule en fonction de ses symptômes."
 center = {'textAlign': 'center', 'margin-top': '25%', 'color': '#fff','font-weight': 'bold'}
 title = { 'margin-top': '1%','margin-left': '1%', 'color': '#fff','font-weight': 'bold'}
-form = {'background-color': '#fff', 'border-radius': '15px', 'padding': '1%', 'margin-top': '1%','margin-left': '1%', 'margin-right': '5%'}
+form = {'background-color': '#fff', 'border-radius': '15px', 'padding': '1%', 'margin-top': '1%','margin-left': '1%', 'margin-right': '1%'}
+cardStyle =  {'margin-top': '2%','margin-left': '2%', 'margin-right': '2%'}
 car = ["Audi", "BMW", "Ford", "Honda", "Jaguar", "Mercedes", "Nissan", "Toyota", "Volkswagen", "Volvo"]
+
 result = [
     {"title": "Carte 1", "text": "Contenu de la carte 1"},
     {"title": "Carte 2", "text": "Contenu de la carte 2"},
-    {"title": "Carte 3", "text": "Contenu de la carte 3"}
+    {"title": "Carte 3", "text": "Contenu de la carte 3"},
+    {"title": "Carte 2", "text": "Contenu de la carte 2"},
+    {"title": "Carte 2", "text": "Contenu de la carte 2"},
 ]
+dropDowns = [
+    {"title":"Mon véhicule","options":car,"id":"car",'idOutput':"carOutput"},
+    {"title":"Symptôme","options":car,"id":"symptome",'idOutput':"symptomeOutput"},
+    {"title":"Kilométrage","options":car,"id":"km",'idOutput':"kmOutput"},
+    {"title":"Organe","options":car,"id":"organe",'idOutput':"organeOutput"},
+    {"title":"Ligne de bus","options":car,"id":"line",'idOutput':"lineOutput"},
+    {"title":"Observation","options":car,"id":"observation",'idOutput':"observationOutput"},
+    
+]
+
+x_data = ['A', 'B', 'C', 'D', 'E']
+y_data = [10, 15, 7, 10, 12]
+
+# Créer une figure avec ces données
+fig = go.Figure(data=go.Bar(x=x_data, y=y_data))
+fig.update_layout(
+    autosize=False,
+    width=500,
+    height=250,
+    margin=dict( l=20, r=20, b=10, t=10, pad=4),
+)
+
+# Créer le graphique Dash avec cette figure
+graph = dcc.Graph(
+    id='example-graph',
+    figure=fig,
+)
+
 cards = []
 for item in result:
     card = dbc.Card(
@@ -26,41 +59,41 @@ for item in result:
                 ]
             )
         ],
-        className="mb-4"
+        className="mb-4",
+        style=cardStyle
     )
     cards.append(card)
 
-app.layout = html.Div(
-    children=[
-        dcc.Location(id='url', refresh=False),
-        html.Div(id='page-content')
-    ]
-)
-
-# Première page
-page_1_layout = html.Div(
-    style={
-        'position': 'absolute',
-        'top': '0',
-        'background-image': 'url("/assets/bg.jpg")',
-        'background-size': 'cover',
-        'background-position': 'center',
-        'width': '100%',
-        'height': '100vh'
-    },
-    children=[
-        html.H1(name, style=center),
-        dbc.Button(
-            "Signaler un problème",
-            href='/page-2',
-            color="primary",
-            style={'margin-left': '43%', 'margin-top': '2%'}
+ddown = []
+for item in dropDowns:
+    ddown.append(
+        html.Div(
+            [
+                dbc.Label(item["title"]),
+                dcc.Dropdown(
+                    id=item["id"],
+                    options=[
+                        {"label": col, "value": col} for col in item["options"]
+                    ],
+                ),
+                html.Div(id=item["idOutput"])
+            ]
         )
-    ]
-)
+    )
 
-# Deuxième page
-page_2_layout = html.Div(
+radio = dcc.RadioItems(
+            id='switch',
+            options=[
+                {'label': 'Mode Simplifié', 'value': False},
+                {'label': 'Mode Avancé', 'value': True}
+            ],
+            value=False,
+            labelStyle={'display': 'inline-block', 'margin-right': '20px'}
+        )
+
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+
+app.layout = html.Div(
     style={
         'position': 'absolute',
         'top': '0',
@@ -70,7 +103,7 @@ page_2_layout = html.Div(
         'width': '100%',
         'height': '100vh'
     },
-    children=[
+        children=[
         html.H1(name, style=title),
 
 dbc.Container(
@@ -80,6 +113,7 @@ dbc.Container(
                 dbc.Col(
                     dbc.Card(
                         [
+                            html.H3("Signaler un problème", className="card-title",style={'text-align': 'center'}),
                             html.Div(
                                 [
                                     dbc.Label("Mon véhicule"),
@@ -88,8 +122,8 @@ dbc.Container(
                                         options=[
                                             {"label": col, "value": col} for col in car
                                         ],
-                                        value="sepal length (cm)",
                                     ),
+                                     html.Div(id='MonVehicule-output')
                                 ]
                             ),
                             html.Div(
@@ -100,8 +134,8 @@ dbc.Container(
                                         options=[
                                             {"label": col, "value": col} for col in car
                                         ],
-                                        value="sepal width (cm)",
                                     ),
+                                    html.Div(id='symptome-output')
                                 ]
                             ),
                             html.Div(
@@ -112,8 +146,8 @@ dbc.Container(
                                         options=[
                                             {"label": col, "value": col} for col in car
                                         ],
-                                        value="sepal width (cm)",
                                     ),
+                                    html.Div(id='km-output')
                                 ]
                             ),
                             html.Div(
@@ -124,8 +158,8 @@ dbc.Container(
                                         options=[
                                             {"label": col, "value": col} for col in car
                                         ],
-                                        value="sepal width (cm)",
                                     ),
+                                    html.Div(id='Organe-output')
                                 ]
                             ),
                             html.Div(
@@ -136,8 +170,8 @@ dbc.Container(
                                         options=[
                                             {"label": col, "value": col} for col in car
                                         ],
-                                        value="sepal width (cm)",
                                     ),
+                                    html.Div(id='ligne-output')
                                 ]
                             ),
                             html.Div(
@@ -148,60 +182,61 @@ dbc.Container(
                                         options=[
                                             {"label": col, "value": col} for col in car
                                         ],
-                                        value="sepal width (cm)",
                                     ),
+                                    html.Div(id='Observation-output')
                                 ]
                             ),
-                            dbc.Button("Envoyer", id="aaa", color="primary", className="mt-3"),
+                            html.Div([
+                                radio,
+                                html.P(id='output-container'),
+                            ]),
+                               
                         ],
                         body=True,
-                        style={'max-width': '400px', 'margin': '0 auto'},
+                        style={'max-width': '400px'},
                     ),
                     width=6
                 ),
                 ## COLONNE 2
                 dbc.Col(dbc.Card(
-                        [html.Div(cards)]), width=6),
+                        [
+                            html.H3("Nos Suggestions", className="card-title",style={'text-align': 'center'}),
+                            html.Div(cards)
+                            ]
+                            ), width=6,
+                    style={'margin-bottom':'-120px'},),
+             html.Div(id='switch-container'),
             ],
             justify="between",
             className="mt-4"
         )
     ]
 )])
-# Troisième page
-page_3_layout = html.Div(
-    style={
-        'position': 'absolute',
-        'top': '0',
-        'background-image': 'url("/assets/bg.jpg")',
-        'background-size': 'cover',
-        'background-position': 'center',
-        'width': '100%',
-        'height': '100vh'
-    },
-    children=[
-        html.H1(name, style=center),
-        dbc.Button("Retour à la page d'accueil", href='/', color="primary")
-    ]
-)
-@app.callback(
-    Output('page-content', 'children'),
-    [Input('url', 'pathname')], 
-)
-def display_page(pathname):
-    if pathname == '/page-2':
-        return page_2_layout
-    elif pathname == '/page-3':
-        return page_3_layout
-    else:
-        return page_1_layout
 
-def submit_form(n_clicks, MonVehicule, symptome, km):
-    if n_clicks:
-        # Construction de l'URL pour la page /page-3 avec les valeurs du formulaire en tant que paramètres de requête
-        url = f"/page-3?x={MonVehicule}&y={symptome}&cluster={km}"
-        return url
-    return ""
+@app.callback(
+    [Output('MonVehicule-output', 'children'),
+     Output('symptome-output', 'children'),
+     Output('switch-container', 'children'),],
+    [
+     Input('MonVehicule', 'value'),
+     Input('symptome', 'value'),
+     Input('km', 'value'),
+     Input('Organe', 'value'),
+     Input('ligne', 'value'),
+     Input('Observation', 'value'),
+     Input('switch', 'value')
+     ]
+)
+def update_output_div(monVehicule, symptome, km, organe, ligne, observation, switch):
+    print(monVehicule)
+    print(symptome)
+    print(switch)
+    if switch == True:
+        print("Mode avancé activé")
+        return None, None, graph
+    else:
+        return None, None, None
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
