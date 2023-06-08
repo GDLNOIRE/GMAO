@@ -8,8 +8,28 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP],suppress_c
 name = "CestQuoiCeBruit ?"
 center = {'textAlign': 'center', 'margin-top': '25%', 'color': '#fff','font-weight': 'bold'}
 title = { 'margin-top': '1%','margin-left': '1%', 'color': '#fff','font-weight': 'bold'}
-form = {'background-color': '#fff', 'border-radius': '15px', 'padding': '20px', 'margin-top': '1%','margin-left': '25%', 'margin-right': '25%'}
+form = {'background-color': '#fff', 'border-radius': '15px', 'padding': '1%', 'margin-top': '1%','margin-left': '1%', 'margin-right': '5%'}
 car = ["Audi", "BMW", "Ford", "Honda", "Jaguar", "Mercedes", "Nissan", "Toyota", "Volkswagen", "Volvo"]
+result = [
+    {"title": "Carte 1", "text": "Contenu de la carte 1"},
+    {"title": "Carte 2", "text": "Contenu de la carte 2"},
+    {"title": "Carte 3", "text": "Contenu de la carte 3"}
+]
+cards = []
+for item in result:
+    card = dbc.Card(
+        [
+            dbc.CardHeader(item["title"]),
+            dbc.CardBody(
+                [
+                    html.P(item["text"], className="card-text"),
+                ]
+            )
+        ],
+        className="mb-4"
+    )
+    cards.append(card)
+
 app.layout = html.Div(
     children=[
         dcc.Location(id='url', refresh=False),
@@ -52,88 +72,102 @@ page_2_layout = html.Div(
     },
     children=[
         html.H1(name, style=title),
-        dbc.Card(
-            [
-                html.Div(
-                    [
-                        dbc.Label("Mon véhicule"),
-                        dcc.Dropdown(
-                            id="MonVehicule",
-                            options=[
-                                {"label": col, "value": col} for col in car
-                            ],
-                            value="sepal length (cm)",
-                        ),
-                    ]
-                ),
-                html.Div(
-                    [
-                        dbc.Label("Symptôme"),
-                        dcc.Dropdown(
-                            id="symptome",
-                            options=[
-                                {"label": col, "value": col} for col in car
-                            ],
-                            value="sepal width (cm)",
-                        ),
-                    ]
-                ),
-                html.Div(
-                    [
-                        dbc.Label("Kilométrage"),
-                        dcc.Dropdown(
-                            id="km",
-                            options=[
-                                {"label": col, "value": col} for col in car
-                            ],
-                            value="sepal width (cm)",
-                        ),
-                    ]
-                ),
-                html.Div(
-                    [
-                        dbc.Label("Organe"),
-                        dcc.Dropdown(
-                            id="Organe",
-                            options=[
-                                {"label": col, "value": col} for col in car
-                            ],
-                            value="sepal width (cm)",
-                        ),
-                    ]
-                ),
-                html.Div(
-                    [
-                        dbc.Label("Ligne de bus"),
-                        dcc.Dropdown(
-                            id="ligne",
-                            options=[
-                                {"label": col, "value": col} for col in car
-                            ],
-                            value="sepal width (cm)",
-                        ),
-                    ]
-                ),
-                html.Div(
-                    [
-                        dbc.Label("Observation"),
-                        dcc.Dropdown(
-                            id="Observation",
-                            options=[
-                                {"label": col, "value": col} for col in car
-                            ],
-                            value="sepal width (cm)",
-                        ),
-                    ]
-                ),
-                dbc.Button("Envoyer", id="submit-button", color="primary", className="mt-3"),
-            ],
-            body=True,
-            style=form,
-        ),
-    ]
-)
 
+dbc.Container(
+    [
+        dbc.Row(
+            [
+                dbc.Col(
+                    dbc.Card(
+                        [
+                            html.Div(
+                                [
+                                    dbc.Label("Mon véhicule"),
+                                    dcc.Dropdown(
+                                        id="MonVehicule",
+                                        options=[
+                                            {"label": col, "value": col} for col in car
+                                        ],
+                                        value="sepal length (cm)",
+                                    ),
+                                ]
+                            ),
+                            html.Div(
+                                [
+                                    dbc.Label("Symptôme"),
+                                    dcc.Dropdown(
+                                        id="symptome",
+                                        options=[
+                                            {"label": col, "value": col} for col in car
+                                        ],
+                                        value="sepal width (cm)",
+                                    ),
+                                ]
+                            ),
+                            html.Div(
+                                [
+                                    dbc.Label("Kilométrage"),
+                                    dcc.Dropdown(
+                                        id="km",
+                                        options=[
+                                            {"label": col, "value": col} for col in car
+                                        ],
+                                        value="sepal width (cm)",
+                                    ),
+                                ]
+                            ),
+                            html.Div(
+                                [
+                                    dbc.Label("Organe"),
+                                    dcc.Dropdown(
+                                        id="Organe",
+                                        options=[
+                                            {"label": col, "value": col} for col in car
+                                        ],
+                                        value="sepal width (cm)",
+                                    ),
+                                ]
+                            ),
+                            html.Div(
+                                [
+                                    dbc.Label("Ligne de bus"),
+                                    dcc.Dropdown(
+                                        id="ligne",
+                                        options=[
+                                            {"label": col, "value": col} for col in car
+                                        ],
+                                        value="sepal width (cm)",
+                                    ),
+                                ]
+                            ),
+                            html.Div(
+                                [
+                                    dbc.Label("Observation"),
+                                    dcc.Dropdown(
+                                        id="Observation",
+                                        options=[
+                                            {"label": col, "value": col} for col in car
+                                        ],
+                                        value="sepal width (cm)",
+                                    ),
+                                ]
+                            ),
+                            dbc.Button("Envoyer", id="aaa", color="primary", className="mt-3"),
+                        ],
+                        body=True,
+                        style={'max-width': '400px', 'margin': '0 auto'},
+                    ),
+                    width=6
+                ),
+                ## COLONNE 2
+                dbc.Col(dbc.Card(
+                        [html.Div(cards)]), width=6),
+            ],
+            justify="between",
+            className="mt-4"
+        )
+    ]
+)])
 # Troisième page
 page_3_layout = html.Div(
     style={
@@ -152,7 +186,7 @@ page_3_layout = html.Div(
 )
 @app.callback(
     Output('page-content', 'children'),
-    [Input('url', 'pathname')],
+    [Input('url', 'pathname')], 
 )
 def display_page(pathname):
     if pathname == '/page-2':
