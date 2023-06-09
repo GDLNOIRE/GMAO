@@ -48,7 +48,7 @@ for value in unique_values:
     var_to_model.append(f"{value}_BIN")
 
 bin_model = var_to_model.copy()     
-binForWeb = bin_model.copy()
+bin_web = bin_model.copy()
 other_var_to_model = ["SYSTEM_N1", "SIG_OBS","SIG_ORGANE","SYSTEM_N2","SYSTEM_N3","TYPE_TRAVAIL","MODELE","KILOMETRAGE_CLASSE"]
 for var in other_var_to_model:
     var_to_model.append(var)
@@ -82,52 +82,6 @@ bn.addArc("TYPE_TRAVAIL", "KILOMETRAGE_CLASSE")
 
 bn.fit(merged_df, verbose_mode=True)
 
-"""test"""
-proba = bn.predict_proba(merged_df[["SIG_OBS","SIG_ORGANE","MODELE"]].iloc[-1:], 
-                var_target="SYSTEM_N1",
-                show_progress=True)
-test2 = bn.predict(merged_df[["SIG_OBS","SIG_ORGANE","MODELE"]].iloc[-1:], 
-                var_target="SYSTEM_N1",
-                show_progress=True)
-
-labels = var_bn["SYSTEM_N1"].labels()
-def cinqMeilleur(labels,proba):
-    indices_plus_haut = np.argsort(proba[0])[-5:]
-    tabProba = []
-    tabLabel = []
-    for ind in indices_plus_haut:
-        #Récupération des valeurs possibles de la variable cible
-        tabProba.append(proba[0][ind])
-        tabLabel.append(labels[ind])
-    return tabLabel,tabProba
-cinqMeilleur(labels,proba)
-
-"""prediction"""
-pred_SystemN1 = bn.predict(merged_df[["SIG_OBS","SIG_ORGANE","MODELE"]].iloc[-5000:], 
-                  var_target="SYSTEM_N1",
-                  show_progress=True)
-bin_model.append("SIG_OBS")
-bin_model.append("SIG_ORGANE")
-bin_model.append("MODELE")
-bin_model.append("SYSTEM_N1")
-bin_model.append("KILOMETRAGE_CLASSE")
-pred_SystemN2 = bn.predict(merged_df[bin_model].iloc[-5000:], 
-                  var_target="SYSTEM_N2",
-                  show_progress=True)
-print(bin_model)
-bin_model.append("SYSTEM_N2")
-pred_SystemN3 = bn.predict(merged_df[bin_model].iloc[-5000:], 
-                  var_target="SYSTEM_N3",
-                  show_progress=True)
-bin_model.append("SYSTEM_N3")
-pred_TypeTravail = bn.predict(merged_df[bin_model].iloc[-5000:], 
-                  var_target="TYPE_TRAVAIL",
-                  show_progress=True)
-
-print((merged_df["SYSTEM_N1"].iloc[-5000:] == pred_SystemN1).mean())
-print((merged_df["SYSTEM_N2"].iloc[-5000:] == pred_SystemN2).mean())
-print((merged_df["SYSTEM_N3"].iloc[-5000:] == pred_SystemN3).mean())
-print((merged_df["TYPE_TRAVAIL"].iloc[-5000:] == pred_TypeTravail).mean())
 
 """
 WEB CONTENT
@@ -154,18 +108,74 @@ def getAllSigContexte():
 def getAllKilometrage():
     return set(merged_df["KILOMETRAGE_CLASSE"])
 
-def predictionWeb(bn,dict,bin_web):
-    VAR_PRED = ["MODELE","KILOMETRAGE_CLASSE","SIG_OBS","SIG_ORGANE"]
-    dictPrediction = dict()
-    context_ToBinary(dictPrediction,bin_web)
-    for var in VAR_PRED:
-        dictPrediction[var] = dict[var]
-        bin_web.append(var)
-    # res = bn.predict_proba(dictPrediction[[bin_web]],var_target="SYSTEM_N1",show_progress=True)
-    # print(res)
-def context_ToBinary(dict,bin_web):
+
+def cinqMeilleur(dictWeb,bin_web,target):
+    #transformation dict en dataframe
+    df = pd.DataFrame(dictWeb)
+    #récupération des proba de N1
+    proba = bn.predict_proba(df[bin_web], 
+                var_target=target,
+                show_progress=True)
+    #récupération des labels de N1
+    labels = var_bn[target].labels()
+    #récupération des 5 indices des 5 plus grandes proba
+    indices_plus_haut = np.argsort(proba[0])[-10:]
+    tabProba = []
+    tabLabel = []
+    for ind in indices_plus_haut:
+        #Récupération des valeurs possibles de la variable cible
+        tabProba.append(proba[0][ind])
+        tabLabel.append(labels[ind])
+    return tabLabel,tabProba
+def context_ToBinary(dictPrediction,dictWeb,bin_web):
     # Séparation des valeurs de la colonne en utilisant le séparateur "/"
-    split_values = dict["SIG_CONTEXTE"].str.split("/")
+    split_values = dictWeb["SIG_CONTEXTE"].str.split("/")
     # Création des colonnes binaires pour chaque valeur unique
     for value in bin_web:
-        dict[f"{value}_BIN"] = split_values.apply(lambda x: int(value in x))
+        value = value.replace("_BIN","")
+        dictPrediction[f"{value}_BIN"] = split_values.apply(lambda x: int(value in x))
+    return dictPrediction
+        
+        
+print("ID : ",merged_df.iloc[-1:]["OT_ID"])
+        
+def predictionWebN1(dictWeb,bin_web):
+    VAR_PRED = ["MODELE","KILOMETRAGE_CLASSE","SIG_OBS","SIG_ORGANE"]
+    VAR_TARGET = "SYSTEM_N1"
+    dictPrediction = dict()
+    dictPrediction = context_ToBinary(dictPrediction,dictWeb,bin_web)
+    for var in VAR_PRED:
+        dictPrediction[var] = dictWeb[var]
+        bin_web.append(var)
+    return dictPrediction,cinqMeilleur(dictPrediction,["SIG_OBS","SIG_ORGANE","MODELE"],VAR_TARGET)
+dictPrediction, label = predictionWebN1(merged_df.iloc[-1:],bin_web)
+print("pred 1 :", label)
+
+def predictionWebN2(dictWeb,bin_web,dictPrediction):
+    VAR_TARGET = "SYSTEM_N2"
+    VAR_GET = "SYSTEM_N1"
+    dictPrediction[VAR_GET] = dictWeb[VAR_GET]
+    bin_web.append(VAR_GET)
+    return dictPrediction,cinqMeilleur(dictPrediction,bin_web,VAR_TARGET)
+
+dictPrediction, label = predictionWebN2(merged_df.iloc[-1:],bin_web,dictPrediction)
+print("pred 2 :", label)
+
+def predictionWebN3(dictWeb,bin_web,dictPrediction):
+    VAR_TARGET = "SYSTEM_N3"
+    VAR_GET = "SYSTEM_N2"
+    dictPrediction[VAR_GET] = dictWeb[VAR_GET]
+    bin_web.append(VAR_GET)
+    return dictPrediction,cinqMeilleur(dictPrediction,bin_web,VAR_TARGET)
+dictPrediction, label = predictionWebN3(merged_df.iloc[-1:],bin_web,dictPrediction)
+print("pred 3 :", label)
+
+def predictionWebWork(dictWeb,bin_web,dictPrediction):
+    VAR_TARGET = "TYPE_TRAVAIL"
+    VAR_GET = "SYSTEM_N3"
+    dictPrediction[VAR_GET] = dictWeb[VAR_GET]
+    bin_web.append(VAR_GET)
+    return cinqMeilleur(dictPrediction,bin_web,VAR_TARGET)
+print(predictionWebWork(merged_df.iloc[-1:],bin_web,dictPrediction))
+label = predictionWebWork(merged_df.iloc[-1:],bin_web,dictPrediction)
+print("pred 4 :", label)
