@@ -8,6 +8,10 @@ import pyAgrum.lib.notebook as gnb
 
 class ReseauBayesien:
     merged_df = None
+    bn = None
+    var_bn = {}
+    dictPrediction = dict()
+    bin_web = []
     
     def __init__(self):
         ot_odr_filename = os.path.join(".", "donnees/OT_ODR.csv.bz2")
@@ -52,7 +56,7 @@ class ReseauBayesien:
             var_to_model.append(f"{value}_BIN")
 
         bin_model = var_to_model.copy()     
-        binForWeb = bin_model.copy()
+        self.bin_web = bin_model.copy()
         other_var_to_model = ["SYSTEM_N1", "SIG_OBS","SIG_ORGANE","SYSTEM_N2","SYSTEM_N3","TYPE_TRAVAIL","MODELE","KILOMETRAGE_CLASSE"]
         for var in other_var_to_model:
             var_to_model.append(var)
@@ -60,42 +64,32 @@ class ReseauBayesien:
         for var in var_to_model:
             self.merged_df[var] = self.merged_df[var].astype('category')
 
-        var_bn = {}
+
         for var in var_to_model:
             nb_values = len(self.merged_df[var].cat.categories)
-            var_bn[var] = gum.LabelizedVariable(var, var, nb_values)
+            self.var_bn[var] = gum.LabelizedVariable(var, var, nb_values)
             
-        for var in var_bn:
+        for var in self.var_bn:
             for i, modalite in enumerate(self.merged_df[var].cat.categories):
-                var_bn[var].changeLabel(i, str(modalite))
+                self.var_bn[var].changeLabel(i, str(modalite))
         self.merged_df
 
 
-        bn = gum.BayesNet("modèle simple")
-        for var in var_bn.values():
-            bn.add(var)
+        self.bn = gum.BayesNet("modèle simple")
+        for var in self.var_bn.values():
+            self.bn.add(var)
         for i in range(len(bin_model)):
-            bn.addArc("SYSTEM_N2",str(bin_model[i]))
-        bn.addArc("SIG_OBS", "SYSTEM_N1")
-        bn.addArc("SIG_ORGANE", "SYSTEM_N1")
-        bn.addArc("MODELE", "SYSTEM_N1")
-        bn.addArc("SYSTEM_N1", "SYSTEM_N2")
-        bn.addArc("SYSTEM_N2", "SYSTEM_N3")
-        bn.addArc("SYSTEM_N3", "TYPE_TRAVAIL")
-        bn.addArc("TYPE_TRAVAIL", "KILOMETRAGE_CLASSE")
+            self.bn.addArc("SYSTEM_N2",str(bin_model[i]))
+        self.bn.addArc("SIG_OBS", "SYSTEM_N1")
+        self.bn.addArc("SIG_ORGANE", "SYSTEM_N1")
+        self.bn.addArc("MODELE", "SYSTEM_N1")
+        self.bn.addArc("SYSTEM_N1", "SYSTEM_N2")
+        self.bn.addArc("SYSTEM_N2", "SYSTEM_N3")
+        self.bn.addArc("SYSTEM_N3", "TYPE_TRAVAIL")
+        self.bn.addArc("TYPE_TRAVAIL", "KILOMETRAGE_CLASSE")
 
-        #bn.fit(self.merged_df, verbose_mode=True)
+        self.bn.fit(self.merged_df, verbose_mode=True)
 
-
-    def cinqMeilleur(labels,proba):
-        indices_plus_haut = np.argsort(proba[0])[-5:]
-        tabProba = []
-        tabLabel = []
-        for ind in indices_plus_haut:
-            #Récupération des valeurs possibles de la variable cible
-            tabProba.append(proba[0][ind])
-            tabLabel.append(labels[ind])
-        return tabLabel,tabProba
     
     """
     WEB CONTENT
@@ -122,20 +116,63 @@ class ReseauBayesien:
     def getAllKilometrage(self):
         return set(self.merged_df["KILOMETRAGE_CLASSE"])
 
-    def context_ToBinary(dict,bin_web):
+    def cinqMeilleur(self,bin_web,target):
+        #transformation dict en dataframe
+        df = pd.DataFrame(self.dictPrediction)
+        #récupération des proba de N1
+        proba = self.bn.predict_proba(df[bin_web], 
+                    var_target=target,
+                    show_progress=True)
+        #récupération des labels de N1
+        labels = self.var_bn[target].labels()
+        #récupération des 5 indices des 5 plus grandes proba
+        indices_plus_haut = np.argsort(proba[0])[-5:]
+        tabProba = []
+        tabLabel = []
+        for ind in indices_plus_haut:
+            #Récupération des valeurs possibles de la variable cible
+            tabProba.append(proba[0][ind])
+            tabLabel.append(labels[ind])
+        return tabLabel,tabProba
+    def context_ToBinary(self,dictWeb):
         # Séparation des valeurs de la colonne en utilisant le séparateur "/"
-        split_values = dict["SIG_CONTEXTE"].str.split("/")
+        split_values = dictWeb["SIG_CONTEXTE"].split("/")
+        split_values = pd.DataFrame(split_values)
         # Création des colonnes binaires pour chaque valeur unique
-        for value in bin_web:
-            dict[f"{value}_BIN"] = split_values.apply(lambda x: int(value in x))
-
-    def predictionWeb(self,bn,dict,bin_web):
+        for value in self.bin_web:
+            value = value.replace("_BIN","")
+            self.dictPrediction[f"{value}_BIN"] = split_values.apply(lambda x: int(value in x))
+        return self.dictPrediction
+            
+            
+    def predictionWebN1(self,dictWeb):
         VAR_PRED = ["MODELE","KILOMETRAGE_CLASSE","SIG_OBS","SIG_ORGANE"]
-        dictPrediction = dict()
-        self.context_ToBinary(dictPrediction,bin_web)
+        VAR_TARGET = "SYSTEM_N1"
+        self.dictPrediction = self.context_ToBinary(dictWeb)
         for var in VAR_PRED:
-            dictPrediction[var] = dict[var]
-            bin_web.append(var)
-        # res = bn.predict_proba(dictPrediction[[bin_web]],var_target="SYSTEM_N1",show_progress=True)
-        # print(res)
+            self.dictPrediction[var] = dictWeb[var]
+            self.bin_web.append(var)
+        return self.cinqMeilleur(["SIG_OBS","SIG_ORGANE","MODELE"],VAR_TARGET)
+
+    def predictionWebN2(self,dictWeb):
+        VAR_TARGET = "SYSTEM_N2"
+        VAR_GET = "SYSTEM_N1"
+        self.dictPrediction[VAR_GET] = dictWeb[VAR_GET]
+        self.bin_web.append(VAR_GET)
+        return self.cinqMeilleur(self.bin_web,VAR_TARGET)
+
+
+    def predictionWebN3(self,dictWeb):
+        VAR_TARGET = "SYSTEM_N3"
+        VAR_GET = "SYSTEM_N2"
+        self.dictPrediction[VAR_GET] = dictWeb[VAR_GET]
+        self.bin_web.append(VAR_GET)
+        return self.cinqMeilleur(self.bin_web,VAR_TARGET)
+
+    def predictionWebWork(self,dictWeb):
+        VAR_TARGET = "TYPE_TRAVAIL"
+        VAR_GET = "SYSTEM_N3"
+        self.dictPrediction[VAR_GET] = dictWeb[VAR_GET]
+        self.bin_web.append(VAR_GET)
+        return self.cinqMeilleur(self.bin_web,VAR_TARGET)
 
