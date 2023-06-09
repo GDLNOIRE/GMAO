@@ -4,6 +4,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
 import plotly.graph_objects as go
+import ReseauBayesien as rb
 name = "CestQuoiCeBruit ?"
 isAdvenced = False
 explain = "CestQuoiCeBruit ? est un outil d'aide au diagnostic de pannes automobiles. Il permet de déterminer la panne d'un véhicule en fonction de ses symptômes."
@@ -12,6 +13,20 @@ title = { 'margin-top': '1%','margin-left': '1%', 'color': '#fff','font-weight':
 form = {'background-color': '#fff', 'border-radius': '15px', 'padding': '1%', 'margin-top': '1%','margin-left': '1%', 'margin-right': '1%'}
 cardStyle =  {'margin-top': '2%','margin-left': '2%', 'margin-right': '2%'}
 car = ["Audi", "BMW", "Ford", "Honda", "Jaguar", "Mercedes", "Nissan", "Toyota", "Volkswagen", "Volvo"]
+
+##### Réseau bayésien #####
+def sortSet(set):
+    return sorted(set, key=str.lower)
+
+rb = rb.ReseauBayesien()
+AllSig_Obs=sortSet(rb.getAllSig_Obs())
+AllSig_Organe= sortSet(rb.getAllSig_Organe())
+AllConstructeur= sortSet(rb.getAllConstructeur())
+AllModele=sortSet(rb.getAllModele())
+AllSigContexte=sortSet(rb.getAllSigContexte())
+AllKilometrage=sortSet(rb.getAllKilometrage())
+
+
 
 result = [
     {"title": "Carte 1", "text": "Contenu de la carte 1"},
@@ -116,23 +131,35 @@ dbc.Container(
                             html.H3("Signaler un problème", className="card-title",style={'text-align': 'center'}),
                             html.Div(
                                 [
-                                    dbc.Label("Mon véhicule"),
+                                    dbc.Label("La marque de mon véhicule"),
                                     dcc.Dropdown(
                                         id="MonVehicule",
                                         options=[
-                                            {"label": col, "value": col} for col in car
+                                            {"label": col, "value": col} for col in AllConstructeur
                                         ],
                                     ),
-                                     html.Div(id='MonVehicule-output')
                                 ]
                             ),
+                            html.Div(
+                                [
+                                    dbc.Label("Modèle"),
+                                    dcc.Dropdown(
+                                        id="monModele",
+                                        options=[
+                                            {"label": col, "value": col} for col in AllModele
+                                        ],
+                                    ),
+                                    html.Div(id='modele-output')
+                                ]
+                            ),
+                            html.Div(id='MonVehicule-output'),
                             html.Div(
                                 [
                                     dbc.Label("Symptôme"),
                                     dcc.Dropdown(
                                         id="symptome",
                                         options=[
-                                            {"label": col, "value": col} for col in car
+                                            {"label": col, "value": col} for col in AllSig_Obs
                                         ],
                                     ),
                                     html.Div(id='symptome-output')
@@ -144,7 +171,7 @@ dbc.Container(
                                     dcc.Dropdown(
                                         id="km",
                                         options=[
-                                            {"label": col, "value": col} for col in car
+                                            {"label": col, "value": col} for col in AllKilometrage
                                         ],
                                     ),
                                     html.Div(id='km-output')
@@ -156,22 +183,10 @@ dbc.Container(
                                     dcc.Dropdown(
                                         id="Organe",
                                         options=[
-                                            {"label": col, "value": col} for col in car
+                                            {"label": col, "value": col} for col in AllSig_Organe
                                         ],
                                     ),
                                     html.Div(id='Organe-output')
-                                ]
-                            ),
-                            html.Div(
-                                [
-                                    dbc.Label("Ligne de bus"),
-                                    dcc.Dropdown(
-                                        id="ligne",
-                                        options=[
-                                            {"label": col, "value": col} for col in car
-                                        ],
-                                    ),
-                                    html.Div(id='ligne-output')
                                 ]
                             ),
                             html.Div(
@@ -180,7 +195,7 @@ dbc.Container(
                                     dcc.Dropdown(
                                         id="Observation",
                                         options=[
-                                            {"label": col, "value": col} for col in car
+                                            {"label": col, "value": col} for col in AllSigContexte
                                         ],
                                     ),
                                     html.Div(id='Observation-output')
@@ -222,20 +237,28 @@ dbc.Container(
      Input('symptome', 'value'),
      Input('km', 'value'),
      Input('Organe', 'value'),
-     Input('ligne', 'value'),
+     Input('monModele', 'value'),
      Input('Observation', 'value'),
      Input('switch', 'value')
      ]
 )
-def update_output_div(monVehicule, symptome, km, organe, ligne, observation, switch):
+def update_output_div(monVehicule, symptome, km, organe, monModele, observation, switch):
+
+    output1 = None
+    output2 = None
+    output3 = None
+    if monVehicule is not None:
+        AllModele = rb.getAllModeleWithConstruct(monVehicule)
+        output1 = dropDownImpl(AllModele)
     print(monVehicule)
     print(symptome)
     print(switch)
     if switch == True:
         print("Mode avancé activé")
-        return None, None, graph
-    else:
-        return None, None, None
+        output3 = graph
+
+    return output1, output2,output3
+
 
 
 if __name__ == '__main__':
