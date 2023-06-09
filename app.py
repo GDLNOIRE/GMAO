@@ -207,7 +207,8 @@ dbc.Container(
                                         options=[
                                             {"label": col, "value": col} for col in systemN1
                                         ],
-                                    )
+                                    ),
+                                    style={'margin-right':'-50px','width':'130px'}
                                     , width=2),
                                 dbc.Col(
                                     html.P(">",style={'text-align':'center'})
@@ -218,7 +219,8 @@ dbc.Container(
                                         options=[
                                             {"label": col, "value": col} for col in systemN2
                                         ],
-                                    )
+                                    ),
+                                    style={'margin-right':'-50px','margin-left':'-50px','width':'130px'}
                                     , width=2),
                                 dbc.Col(
                                     html.P(">",style={'text-align':'center'})
@@ -229,7 +231,8 @@ dbc.Container(
                                         options=[
                                             {"label": col, "value": col} for col in systemN3
                                         ],
-                                    )
+                                    ),
+                                    style={'margin-left':'-50px','width':'130px'}
                                     , width=2),
                             ])
                         ], fluid=True),
