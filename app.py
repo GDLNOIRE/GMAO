@@ -5,6 +5,8 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 import ReseauBayesien as rb
+
+###### Data & Style ######
 name = "CestQuoiCeBruit ?"
 isAdvenced = False
 explain = "CestQuoiCeBruit ? est un outil d'aide au diagnostic de pannes automobiles. Il permet de déterminer la panne d'un véhicule en fonction de ses symptômes."
@@ -12,7 +14,21 @@ center = {'textAlign': 'center', 'margin-top': '25%', 'color': '#fff','font-weig
 title = { 'margin-top': '1%','margin-left': '1%', 'color': '#fff','font-weight': 'bold'}
 form = {'background-color': '#fff', 'border-radius': '15px', 'padding': '1%', 'margin-top': '1%','margin-left': '1%', 'margin-right': '1%'}
 cardStyle =  {'margin-top': '2%','margin-left': '2%', 'margin-right': '2%'}
-car = ["Audi", "BMW", "Ford", "Honda", "Jaguar", "Mercedes", "Nissan", "Toyota", "Volkswagen", "Volvo"]
+result = [
+    {"title": "Pas de résultat", "text": "Aucun résultat trouvé"},
+]  
+x_data = ['A', 'B', 'C', 'D', 'E']
+y_data = [10, 15, 7, 10, 12]
+cards = []
+
+systemN1= []
+reponseN1= None
+systemN2= []
+reponseN2= None
+systemN3= []
+reponseN3= None
+typeDeTravail= []
+###########################
 
 ##### Réseau bayésien #####
 def sortSet(set):
@@ -25,28 +41,10 @@ AllConstructeur= sortSet(rb.getAllConstructeur())
 AllModele=sortSet(rb.getAllModele())
 AllSigContexte=sortSet(rb.getAllSigContexte())
 AllKilometrage=sortSet(rb.getAllKilometrage())
+###########################
 
 
-
-result = [
-    {"title": "Carte 1", "text": "Contenu de la carte 1"},
-    {"title": "Carte 2", "text": "Contenu de la carte 2"},
-    {"title": "Carte 3", "text": "Contenu de la carte 3"},
-    {"title": "Carte 2", "text": "Contenu de la carte 2"},
-    {"title": "Carte 2", "text": "Contenu de la carte 2"},
-]
-dropDowns = [
-    {"title":"Mon véhicule","options":car,"id":"car",'idOutput':"carOutput"},
-    {"title":"Symptôme","options":car,"id":"symptome",'idOutput':"symptomeOutput"},
-    {"title":"Kilométrage","options":car,"id":"km",'idOutput':"kmOutput"},
-    {"title":"Organe","options":car,"id":"organe",'idOutput':"organeOutput"},
-    {"title":"Ligne de bus","options":car,"id":"line",'idOutput':"lineOutput"},
-    {"title":"Observation","options":car,"id":"observation",'idOutput':"observationOutput"},
-    
-]
-
-x_data = ['A', 'B', 'C', 'D', 'E']
-y_data = [10, 15, 7, 10, 12]
+##### Composants Dash #####
 
 # Créer une figure avec ces données
 fig = go.Figure(data=go.Bar(x=x_data, y=y_data))
@@ -56,14 +54,12 @@ fig.update_layout(
     height=250,
     margin=dict( l=20, r=20, b=10, t=10, pad=4),
 )
-
 # Créer le graphique Dash avec cette figure
 graph = dcc.Graph(
-    id='example-graph',
+    id='graph',
     figure=fig,
 )
 
-cards = []
 for item in result:
     card = dbc.Card(
         [
@@ -79,23 +75,6 @@ for item in result:
     )
     cards.append(card)
 
-ddown = []
-for item in dropDowns:
-    ddown.append(
-        html.Div(
-            [
-                dbc.Label(item["title"]),
-                dcc.Dropdown(
-                    id=item["id"],
-                    options=[
-                        {"label": col, "value": col} for col in item["options"]
-                    ],
-                ),
-                html.Div(id=item["idOutput"])
-            ]
-        )
-    )
-
 radio = dcc.RadioItems(
             id='switch',
             options=[
@@ -106,6 +85,10 @@ radio = dcc.RadioItems(
             labelStyle={'display': 'inline-block', 'margin-right': '20px'}
         )
 
+###########################
+
+
+##### Application Dash #####
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 app.layout = html.Div(
@@ -216,6 +199,40 @@ dbc.Container(
                 dbc.Col(dbc.Card(
                         [
                             html.H3("Nos Suggestions", className="card-title",style={'text-align': 'center'}),
+                            dbc.Container([
+                            dbc.Row([
+                                dbc.Col(
+                                    dcc.Dropdown(
+                                        id="N1",
+                                        options=[
+                                            {"label": col, "value": col} for col in systemN1
+                                        ],
+                                    )
+                                    , width=2),
+                                dbc.Col(
+                                    html.P(">",style={'text-align':'center'})
+                                    , width=2),
+                                dbc.Col(
+                                    dcc.Dropdown(
+                                        id="N2",
+                                        options=[
+                                            {"label": col, "value": col} for col in systemN2
+                                        ],
+                                    )
+                                    , width=2),
+                                dbc.Col(
+                                    html.P(">",style={'text-align':'center'})
+                                    , width=2),
+                                dbc.Col(
+                                    dcc.Dropdown(
+                                        id="N3",
+                                        options=[
+                                            {"label": col, "value": col} for col in systemN3
+                                        ],
+                                    )
+                                    , width=2),
+                            ])
+                        ], fluid=True),
                             html.Div(cards)
                             ]
                             ), width=6,
@@ -227,7 +244,8 @@ dbc.Container(
         )
     ]
 )])
-
+###########################
+##### Callbacks ###########
 @app.callback(
     [Output('MonVehicule-output', 'children'),
      Output('symptome-output', 'children'),
@@ -239,27 +257,27 @@ dbc.Container(
      Input('Organe', 'value'),
      Input('monModele', 'value'),
      Input('Observation', 'value'),
-     Input('switch', 'value')
+     Input('switch', 'value'),
+     Input('N1', 'value'),
+     Input('N2', 'value'),
+     Input('N3', 'value'),
+
      ]
 )
-def update_output_div(monVehicule, symptome, km, organe, monModele, observation, switch):
-
+def update_output_div(monVehicule, symptome, km, organe, monModele, observation, switch, systemN1, systemN2, systemN3):
     output1 = None
     output2 = None
     output3 = None
-    if monVehicule is not None:
-        AllModele = rb.getAllModeleWithConstruct(monVehicule)
-        output1 = dropDownImpl(AllModele)
-    print(monVehicule)
-    print(symptome)
-    print(switch)
+
+    dict = {"MODELE": monModele, "SIG_OBS": symptome, "KILOMETRAGE_CLASSE": km, "SIG_ORGANE": organe, "SIG_CONTEXTE": observation,"SYSTEM_N1":systemN1,"SYSTEM_N2":systemN2,"SYSTEM_N3":systemN3,"TYPE_TRAVAIL":typeDeTravail}
     if switch == True:
         print("Mode avancé activé")
         output3 = graph
 
     return output1, output2,output3
 
-
-
+###########################
+##### Run Application #####
 if __name__ == '__main__':
     app.run_server(debug=True)
+###########################
